@@ -3,20 +3,21 @@ import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from serpapi import GoogleSearch
-import openai
+import groq
 import os
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 SERP_API_KEY = os.getenv("SERP_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+groq.api_key = GROQ_API_KEY
 
 st.title("AI Agent Dashboard")
 st.write("Upload a CSV file or connect to a Google Sheet to get started.")
 
-# Initialize df
 df = None
+queries = []
 
 # File upload section
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -49,6 +50,63 @@ def perform_search(query):
     search = GoogleSearch({"q": query, "api_key": SERP_API_KEY})
     result = search.get_dict()
     return result.get("organic_results", [])  # Returns list of organic search results
+
+# Initialize the Groq client
+client = groq.Groq()
+
+def process_with_groq(query, search_results, custom_prompt):
+    """
+    Uses the Groq API to extract specific information based on the custom prompt and search results.
+    """
+    # Format the prompt with the search results
+    search_text = "\n".join([f"{result['title']}: {result['link']}\n{result['snippet']}" for result in search_results])
+    prompt = f"{custom_prompt} from the following search results:\n\n{search_text}\n\nPlease extract the information requested and give me one result only, no additional dialogue, just few words/url info. Do not respond with 'here's the information:', just give the result"
+
+    # Send the prompt to Groq and handle streaming response
+    completion = client.chat.completions.create(
+        model="llama3-8b-8192",  # Replace with the correct model if needed
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.5,
+        max_tokens=150,
+        top_p=1,
+        stream=True,
+        stop=None
+    )
+
+    # Collect the streamed response
+    response_text = ""
+    for chunk in completion:
+        response_text += chunk.choices[0].delta.content or ""
+
+    return response_text.strip()
+
+# def update_google_sheet(spreadsheet_id, range_name, data):
+#     # Convert DataFrame to list of lists for Google Sheets API format
+#     values = data.values.tolist()
+    
+#     # Prepare the request body for appending data
+#     body = {
+#         "values": values
+#     }
+
+#     try:
+#         # Append data to the Google Sheet
+#         service = build("sheets", "v4", credentials=credentials)
+#         response = service.spreadsheets().values().append(
+#             spreadsheetId=spreadsheet_id,
+#             range=range_name,  # E.g., 'Sheet1!A:D' or simply 'Sheet1'
+#             valueInputOption="USER_ENTERED",
+#             insertDataOption="INSERT_ROWS",  # This ensures rows are added without overwriting
+#             body=body
+#         ).execute()
+        
+#         # Confirm success
+#         st.write("Data successfully appended to Google Sheet!")
+#     except Exception as e:
+#         st.write(f"An error occurred: {e}")
 
 # Google Sheets data input
 st.write("Or connect to a Google Sheet:")
@@ -84,43 +142,37 @@ if df is not None:
         st.write("Generated Queries:")
         st.write(queries)
 
-    # Button to confirm and start processing (e.g., web search, API calls)
-    if st.button("Generate Searches"):
-        if queries:
-            # Perform searches and collect results
-            search_results = []
-            for query in queries:
-                result = perform_search(query)
-                search_results.append({"query": query, "results": result})
-            
-            st.write("Search Results:")
-            for result in search_results:
-                st.write(f"Query: {result['query']}")
-                st.write("Results:")
-                for item in result["results"]:
-                    st.write(f" - {item.get('title')}: {item.get('link')}")
-        else:
-            st.write("Please make sure you have entered a prompt and selected a column.")
+# Button to confirm and start processing (e.g., web search, API calls)
+if st.button("Generate Searches"):
+    if queries:
+        # Perform searches and collect results
+        search_results = []
+        for query in queries:
+            # Get search results
+            result = perform_search(query)
+            # Process results with Groq API
+            extracted_info = process_with_groq(query, result, custom_prompt)
+            search_results.append({"Query": query, "Extracted Information": extracted_info})
+        
+        # Convert the results to a DataFrame for display
+        results_df = pd.DataFrame(search_results)
+        
+        # Display the extracted information in a table
+        st.write("Extracted Information:")
+        st.dataframe(results_df)  # You can also use st.table(results_df) if you prefer a static table
 
-openai.api_key = OPENAI_API_KEY
+        # Add download button for CSV export
+        csv_data = results_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download Extracted Information as CSV",
+            data=csv_data,
+            file_name="extracted_information.csv",
+            mime="text/csv"
+        )
 
-def process_with_llm(query, search_results, custom_prompt):
-    """
-    Uses the LLM to extract specific information based on the custom prompt and search results.
-    """
-    # Combine the search results into a single text for the LLM
-    search_text = "\n".join([f"{result['title']}: {result['link']}\n{result['snippet']}" for result in search_results])
+        # Button to update Google Sheets with extracted information
+        # if st.button("Update Google Sheet with Extracted Information"):
+        #     update_google_sheet(spreadsheet_id, range_name, results_df)
 
-    # Create a prompt for the LLM
-    llm_prompt = f"{custom_prompt} from the following search results:\n\n{search_text}\n\nPlease extract the information requested."
 
-    # Call the LLM API (e.g., OpenAI's GPT-4)
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=llm_prompt,
-        max_tokens=150,
-        temperature=0.5
-    )
 
-    # Return the LLM's response text
-    return response.choices[0].text.strip()
