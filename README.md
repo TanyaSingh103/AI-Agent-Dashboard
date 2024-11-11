@@ -29,9 +29,15 @@ cd AI-Agent-Project
 Create and activate a virtual environment:
 ```
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
-
+For Windows:
+```
+venv\Scripts\activate
+```
+For macOS/Linux:
+```
+source venv/bin/activate
+```
 ### 4. Install Requirements
 Install all dependencies from the requirements.txt file:
 ```
