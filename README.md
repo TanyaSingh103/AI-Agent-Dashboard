@@ -9,7 +9,8 @@ The AI Agent Dashboard is an interactive tool that allows users to automatically
 - Automated Web Search & Processing: Fetch search results with SerpAPI and process them with Groq for valuable information extraction.
 - LangChain Agent Workflow: Organizes automated workflows using SerpAPI and Groq tools.
 - Results Display & CSV Export: View extracted information in a table and download it as a CSV file.
-
+- Error Handling: Provides clear feedback for failed API calls or invalid inputs, ensuring smooth user experience.
+- 
 ## Setup Instructions
 
 ### 1. Prerequisites
@@ -83,3 +84,15 @@ Use the "Execute Agent" button to let LangChain’s agent organize the workflow 
 - SerpAPI: Used to perform web searches based on the generated queries. 
 - Groq API: Processes the search results using custom prompts.
 - LangChain: A framework that enables the creation of custom agents to manage workflows. 
+
+## Error Handling
+
+The AI Agent Dashboard includes robust error handling to ensure a smooth user experience:
+
+- Google Sheets API: Displays an error message if there is an issue with accessing the sheet (e.g., invalid credentials, incorrect range).
+- SerpAPI: Notifies the user if the web search fails due to invalid API keys, network issues, or missing results.
+- Groq API: Alerts the user if the Groq API fails to process queries or if the model cannot generate a response.
+- General Error Logging: Errors for invalid inputs or processing failures are displayed as warnings or error messages in the Streamlit dashboard, ensuring users can debug issues easily.
+- Fallback for Missing Results: If no results are found for a query, a warning is displayed and logged as "No results found."
+
+These mechanisms ensure that the app does not crash during unexpected errors and provides actionable feedback to the user.
