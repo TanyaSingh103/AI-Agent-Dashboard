@@ -60,20 +60,19 @@ LANGCHAIN_API_KEY=langchain_api_key
 ## Usage Guide
 ### 1. Run the Dashboard
 Start the Streamlit app:
-'''
+```
 streamlit run agent_dashboard.py
-'''
+```
 ### 2. Upload Data or Connect to Google Sheets
 - Upload a CSV: Use the “Choose a CSV file” option to upload a file containing entity data.
 - Connect to Google Sheets: Enter the Google Sheets ID and specify the range (e.g., Sheet1!A1:D10) to load data.
 
-### 3. Define Search Query and Generate Results
+### 3. Define Search Query 
 - Define Placeholder and Custom Prompt: Enter a placeholder (e.g., {company}) and create a custom prompt.
 - Select Column for Query Generation: Choose the column that contains entities for your search.
-- Generate Searches: Click "Generate Searches" to run the queries, retrieve search results, and process them with Groq.
 
-### 4. Execute Agent (Optional)
-Use the "Execute Agent" button to let LangChain’s agent organize the workflow dynamically between the tools.
+### 4. Execute Agent 
+Use the "Execute Agent" button to let LangChain’s agent organize the workflow dynamically between the tools. It will run the queries, retrieve search results, and process them with Groq.
 
 ### 5. View and Export Results
 - View Results: Extracted information is displayed in a table on the dashboard.
