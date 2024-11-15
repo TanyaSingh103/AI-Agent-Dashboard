@@ -147,22 +147,33 @@ if st.button("Execute Agent"):
     if queries:
         results = []
         for query in queries:
-             # Fetch search results adn extract information
-            results_for_query = perform_search(query) 
-            extracted_info = process_with_groq(query, results_for_query, custom_prompt)
-            
-            results.append({"Query": query, "Extracted Information": extracted_info})
-        
-        # Display the results
-        results_df = pd.DataFrame(results)
-        st.write("Agent Responses:")
-        st.dataframe(results_df)
+            try:
+                # Fetch search results
+                results_for_query = perform_search(query)
+                if not results_for_query:
+                    st.warning(f"No search results found for query: {query}")
+                    results.append({"Query": query, "Extracted Information": "No results found"})
+                    continue
 
-        # Download button for CSV export
-        csv_data = results_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Agent Responses as CSV",
-            data=csv_data,
-            file_name="agent_responses.csv",
-            mime="text/csv"
-        )
+                # Extract information using Groq
+                extracted_info = process_with_groq(query, results_for_query, custom_prompt)
+                results.append({"Query": query, "Extracted Information": extracted_info})
+
+            except Exception as e:
+                st.error(f"An error occurred while processing query '{query}': {e}")
+                results.append({"Query": query, "Extracted Information": "Error occurred"})
+
+        # Display results
+        if results:
+            results_df = pd.DataFrame(results)
+            st.write("Agent Responses:")
+            st.dataframe(results_df)
+
+            # Download button for CSV export
+            csv_data = results_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Agent Responses as CSV",
+                data=csv_data,
+                file_name="agent_responses.csv",
+                mime="text/csv"
+            )
