@@ -26,44 +26,56 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 
 def fetch_google_sheet_data(spreadsheet_id, range_name):
-    service = build("sheets", "v4", credentials=credentials)
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-    values = result.get("values", [])
-    
-    if not values:
-        st.write("No data found in the specified range.")
+    try:
+        service = build("sheets", "v4", credentials=credentials)
+        sheet = service.spreadsheets()
+        result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+        values = result.get("values", [])
+        
+        if not values:
+            st.warning("No data found in the specified range.")
+            return None
+        else:
+            df = pd.DataFrame(values[1:], columns=values[0])
+            return df
+    except Exception as e:
+        st.error(f"An error occurred while fetching Google Sheets data: {e}")
         return None
-    else:
-        df = pd.DataFrame(values[1:], columns=values[0])
-        return df
 
 # Search using SerpAPI
 def perform_search(query):
-    search = GoogleSearch({"q": query, "api_key": SERP_API_KEY})
-    result = search.get_dict()
-    return result.get("organic_results", [])
+    try:
+        search = GoogleSearch({"q": query, "api_key": SERP_API_KEY})
+        result = search.get_dict()
+        return result.get("organic_results", [])
+    except Exception as e:
+        st.error(f"An error occurred while performing a web search: {e}")
+        return []
 
 
 def process_with_groq(query, search_results, custom_prompt):
-    search_text = "\n".join([f"{result['title']}: {result['link']}\n{result['snippet']}" for result in search_results])
-    prompt = f"{custom_prompt} from the following search results:\n\n{search_text}\n\nPlease extract the information requested and give me one result only, no additional dialogue, just few words/url info. Do not respond with 'here's the information:', just give the result"
+    try:
+        search_text = "\n".join([f"{result['title']}: {result['link']}\n{result['snippet']}" for result in search_results])
+        prompt = f"{custom_prompt} from the following search results:\n\n{search_text}\n\nPlease extract the information requested and give me one result only, no additional dialogue, just few words/url info. Do not respond with 'here's the information:', just give the result"
 
-    completion = groq.Groq().chat.completions.create(
-        model="llama3-8b-8192", 
-        messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": prompt}],
-        temperature=0.5,
-        max_tokens=150,
-        top_p=1,
-        stream=True,
-        stop=None
-    )
+        completion = groq.Groq().chat.completions.create(
+            model="llama3-8b-8192", 
+            messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": prompt}],
+            temperature=0.5,
+            max_tokens=150,
+            top_p=1,
+            stream=True,
+            stop=None
+        )
 
-    response_text = ""
-    for chunk in completion:
-        response_text += chunk.choices[0].delta.content or ""
-    
-    return response_text.strip()
+        response_text = ""
+        for chunk in completion:
+            response_text += chunk.choices[0].delta.content or ""
+
+        return response_text.strip()
+    except Exception as e:
+        st.error(f"An error occurred while processing with Groq: {e}")
+        return "Error in processing"
 
 # Streamlit UI setup
 st.title("AI Agent Dashboard")
