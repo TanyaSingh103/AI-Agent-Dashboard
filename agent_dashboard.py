@@ -11,13 +11,13 @@ from langchain.agents import initialize_agent, Tool, AgentType
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 
-# Load environment variables
+# Environment variables
 load_dotenv()
 SERP_API_KEY = os.getenv("SERP_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 groq.api_key = GROQ_API_KEY
 
-# Initialize Groq model using langchain_groq
+# Groq model using langchain_groq
 model = ChatGroq(model="llama3-8b-8192")
 
 # Google Sheets integration setup
@@ -38,13 +38,13 @@ def fetch_google_sheet_data(spreadsheet_id, range_name):
         df = pd.DataFrame(values[1:], columns=values[0])
         return df
 
-# Function to perform a search using SerpAPI
+# Search using SerpAPI
 def perform_search(query):
     search = GoogleSearch({"q": query, "api_key": SERP_API_KEY})
     result = search.get_dict()
     return result.get("organic_results", [])
 
-# Function to process with Groq API
+
 def process_with_groq(query, search_results, custom_prompt):
     search_text = "\n".join([f"{result['title']}: {result['link']}\n{result['snippet']}" for result in search_results])
     prompt = f"{custom_prompt} from the following search results:\n\n{search_text}\n\nPlease extract the information requested and give me one result only, no additional dialogue, just few words/url info. Do not respond with 'here's the information:', just give the result"
@@ -94,55 +94,22 @@ if df is not None:
     # Dynamic query input for search prompt
     st.subheader("Define Your Search Query")
 
-    # User-defined placeholder (e.g., 'company' for '{company}')
+    # User-defined placeholder 
     placeholder_text = st.text_input("Enter your placeholder name (e.g., 'company')", value="entity")
     custom_prompt = st.text_input(f"Enter your prompt (e.g., 'Get me the email address of {{{placeholder_text}}}')")
 
-    # Column selection for entity list
     st.write("Select the main column (e.g., company names):")
     column_choice = st.selectbox("Column:", df.columns)
 
-    # Generate custom queries if prompt and column are chosen
+    # Custom query generation
     if custom_prompt and column_choice:
         placeholder = f"{{{placeholder_text}}}"
         queries = [custom_prompt.replace(placeholder, str(entity)) for entity in df[column_choice]]
         st.write("Generated Queries:")
         st.write(queries)
 
-# Button to confirm and start processing (e.g., web search, API calls)
-if st.button("Generate Searches"):
-    if queries:
-        search_results = []
-        # Ensure 'custom_prompt' is defined
-        if custom_prompt:
-            for query in queries:
-                # Get search results for each query
-                results = perform_search(query)
 
-                if results:
-                    # Pass the search results and custom prompt to the function
-                    extracted_info = process_with_groq(query, results, custom_prompt)
-                    search_results.append({"Query": query, "Extracted Information": extracted_info})
-                else:
-                    search_results.append({"Query": query, "Extracted Information": "No results found"})
-
-        # Convert the results to a DataFrame for display
-        if search_results:
-            results_df = pd.DataFrame(search_results)
-
-            st.write("Extracted Information:")
-            st.dataframe(results_df)
-
-            # Add download button for CSV export
-            csv_data = results_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="Download Extracted Information as CSV",
-                data=csv_data,
-                file_name="extracted_information.csv",
-                mime="text/csv"
-            )
-
-# Initialize tools for Langchain agent
+# Tools for Langchain agent
 search_tool = Tool(
     name="Google Search",
     func=perform_search,
@@ -157,7 +124,6 @@ groq_tool = Tool(
 
 tools = [search_tool, groq_tool]
 
-# Initialize the agent
 agent = initialize_agent(
     tools,
     model,
@@ -165,14 +131,12 @@ agent = initialize_agent(
     verbose=True
 )
 
-# Button to execute the Langchain agent
 if st.button("Execute Agent"):
     if queries:
         results = []
         for query in queries:
-            # Ensure Groq receives the right arguments
-            # You need to ensure that search results are passed to the agent
-            results_for_query = perform_search(query)  # Fetch search results first
+             # Fetch search results adn extract information
+            results_for_query = perform_search(query) 
             extracted_info = process_with_groq(query, results_for_query, custom_prompt)
             
             results.append({"Query": query, "Extracted Information": extracted_info})
@@ -182,7 +146,7 @@ if st.button("Execute Agent"):
         st.write("Agent Responses:")
         st.dataframe(results_df)
 
-        # Add download button for CSV export
+        # Download button for CSV export
         csv_data = results_df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="Download Agent Responses as CSV",
