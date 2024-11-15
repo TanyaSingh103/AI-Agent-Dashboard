@@ -29,9 +29,15 @@ cd AI-Agent-Project
 Create and activate a virtual environment:
 ```
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
-
+For Windows:
+```
+venv\Scripts\activate
+```
+For macOS/Linux:
+```
+source venv/bin/activate
+```
 ### 4. Install Requirements
 Install all dependencies from the requirements.txt file:
 ```
@@ -42,6 +48,8 @@ Create a .env file in the project root directory with the following keys:
 ```
 SERP_API_KEY=your_serpapi_key
 GROQ_API_KEY=your_groq_api_key
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=langchain_api_key
 ```
 ### 6. Configure Google Sheets API
 
