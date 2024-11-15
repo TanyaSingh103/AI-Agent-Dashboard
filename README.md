@@ -3,6 +3,8 @@
 
 The AI Agent Dashboard is an interactive tool that allows users to automatically generate custom queries based on data from a CSV file or Google Sheets and retrieve relevant information through automated web searches. Using LangChain’s agent framework, the dashboard integrates SerpAPI for web searches and Groq API for processing search results, delivering valuable extracted insights directly on the dashboard.
 
+Here's a demo of the dashboard : https://www.loom.com/share/4e5858e7e38c4a0390ab91da7f77f4ee?sid=8ba08da9-5397-414c-b854-e83da257bcdf
+
 ## Features
 - CSV & Google Sheets Integration: Upload a CSV file or connect to a Google Sheet to use entity data for queries.
 - Custom Query Generation: Create dynamic queries using custom prompts with placeholders.
